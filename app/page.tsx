@@ -17,7 +17,7 @@ export default function Home() {
       href: "/appraiser",
       icon: "📊",
       status: "coming-soon",
-      gradient: "from-pop via-indigo-600 to-indigo-800",
+      gradient: "from-navy-light via-navy to-navy-dark",
       badge: "bg-white/20 text-white",
     },
   ];

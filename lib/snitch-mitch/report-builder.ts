@@ -27,7 +27,7 @@ export async function generateReport(report: InspectionReport): Promise<void> {
   const pageWidth = doc.internal.pageSize.getWidth();
 
   // Header — deep slate navy
-  doc.setFillColor(15, 23, 42); // navy #0F172A
+  doc.setFillColor(27, 58, 107); // navy #1B3A6B
   doc.rect(0, 0, pageWidth, 40, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(24);
@@ -81,7 +81,7 @@ export async function generateReport(report: InspectionReport): Promise<void> {
       ["Total Findings", report.findings.length.toString()],
     ],
     theme: "grid",
-    headStyles: { fillColor: [15, 23, 42] },
+    headStyles: { fillColor: [27, 58, 107] },
     columnStyles: { 0: { cellWidth: 80 } },
     margin: { left: 14 },
   });
@@ -92,13 +92,13 @@ export async function generateReport(report: InspectionReport): Promise<void> {
 
   yPos = (doc as any).lastAutoTable.finalY + 10;
   doc.setFontSize(12);
-  doc.setTextColor(15, 23, 42); // navy
+  doc.setTextColor(27, 58, 107); // navy
   doc.text(`Estimated Total Cost to Cure: $${totalLow.toLocaleString()} — $${totalHigh.toLocaleString()}`, 14, yPos);
 
   // Detailed findings
   doc.addPage();
   doc.setFontSize(18);
-  doc.setTextColor(15, 23, 42); // navy
+  doc.setTextColor(27, 58, 107); // navy
   doc.text("Detailed Findings", 14, 20);
 
   yPos = 30;
@@ -123,7 +123,7 @@ export async function generateReport(report: InspectionReport): Promise<void> {
     doc.roundedRect(14, yPos - 4, 4, 16, 1, 1, "F");
 
     doc.setFontSize(11);
-    doc.setTextColor(15, 23, 42); // navy
+    doc.setTextColor(27, 58, 107); // navy
     doc.text(finding.issue, 22, yPos + 2);
 
     doc.setFontSize(9);
