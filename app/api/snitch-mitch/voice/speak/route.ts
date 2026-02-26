@@ -1,11 +1,11 @@
 import OpenAI from "openai";
 import { NextRequest } from "next/server";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
-    const { text } = await req.json();
+    const { text, userOpenaiKey } = await req.json();
 
     if (!text) {
       return Response.json({ error: "No text provided" }, { status: 400 });
@@ -24,6 +24,10 @@ export async function POST(req: NextRequest) {
 
     // Limit to ~4000 chars for TTS
     const truncated = cleanText.slice(0, 4000);
+
+    // Use user's key if provided, otherwise fall back to platform key
+    const apiKey = userOpenaiKey || process.env.OPENAI_API_KEY;
+    const openai = new OpenAI({ apiKey });
 
     const mp3 = await openai.audio.speech.create({
       model: "tts-1",

@@ -2,15 +2,16 @@ import Anthropic from "@anthropic-ai/sdk";
 import { SNITCH_MITCH_SYSTEM_PROMPT } from "@/lib/snitch-mitch/system-prompt";
 import { NextRequest } from "next/server";
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
-// Increase body size limit for image uploads
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { messages, inspectionContext } = body;
+    const { messages, inspectionContext, userAnthropicKey } = body;
+
+    // Use user's key if provided, otherwise fall back to platform key
+    const apiKey = userAnthropicKey || process.env.ANTHROPIC_API_KEY;
+    const anthropic = new Anthropic({ apiKey });
 
     // Build system prompt with inspection context
     let systemPrompt = SNITCH_MITCH_SYSTEM_PROMPT;
@@ -18,11 +19,10 @@ export async function POST(req: NextRequest) {
       systemPrompt += `\n\n## Current Inspection Context\n${inspectionContext}`;
     }
 
-    // Convert messages to Anthropic format — only send the last 10 messages to stay within limits
+    // Convert messages to Anthropic format — only send the last 10 messages
     const recentMessages = messages.slice(-10);
     const anthropicMessages = recentMessages.map((msg: any) => {
       if (msg.role === "user" && msg.images && msg.images.length > 0) {
-        // Message with images
         const content: any[] = [];
         for (const img of msg.images) {
           content.push({
@@ -50,7 +50,6 @@ export async function POST(req: NextRequest) {
       messages: anthropicMessages,
     });
 
-    // Create a ReadableStream for streaming response
     const encoder = new TextEncoder();
     const readable = new ReadableStream({
       async start(controller) {

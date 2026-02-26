@@ -6,6 +6,7 @@ import { INSPECTION_AREAS, DEFAULT_INSPECTION_ORDER, type InspectionArea } from 
 import type { Finding, InspectionReport } from "@/lib/snitch-mitch/report-builder";
 import AuthGuard from "@/components/AuthGuard";
 import { supabase } from "@/lib/supabase";
+import { getUserApiKeys, hasUserApiKeys, trackUsage, getUsageCount, FREE_LIMIT } from "@/lib/usage";
 
 // ===== Types =====
 interface ChatMessage {
@@ -59,6 +60,38 @@ export default function SnitchMitchPage() {
   const [showReportPanel, setShowReportPanel] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
 
+  // Usage tracking
+  const [usageCount, setUsageCount] = useState(0);
+  const [isOverLimit, setIsOverLimit] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [isUnlimited, setIsUnlimited] = useState(false);
+
+  // Load user and usage on mount
+  useEffect(() => {
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUserId(session.user.id);
+        setUserEmail(session.user.email || null);
+        const count = await getUsageCount(session.user.id);
+        setUsageCount(count);
+        // Check if user is unlimited (admin toggle)
+        const { data } = await supabase
+          .from("user_settings")
+          .select("unlimited")
+          .eq("user_id", session.user.id)
+          .single();
+        if (data?.unlimited) {
+          setIsUnlimited(true);
+        } else {
+          const ownKeys = hasUserApiKeys();
+          setIsOverLimit(count >= FREE_LIMIT && !ownKeys);
+        }
+      }
+    })();
+  }, []);
+
   // Auto-scroll chat
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -100,10 +133,30 @@ export default function SnitchMitchPage() {
     }));
 
     try {
+      // Check usage limits (skip if unlimited)
+      if (!isUnlimited && !hasUserApiKeys() && usageCount >= FREE_LIMIT) {
+        setIsOverLimit(true);
+        setMessages(prev => [...prev, {
+          id: (Date.now() + 1).toString(),
+          role: "assistant",
+          content: "You've reached your free message limit for this month. Head to **Settings** to add your own API key and continue using the tools, or wait until next month for your free messages to reset.",
+          timestamp: new Date(),
+        }]);
+        setIsStreaming(false);
+        return;
+      }
+
+      // Get user API keys if available
+      const userKeys = getUserApiKeys();
+
       const response = await fetch("/api/snitch-mitch/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: apiMessages, inspectionContext }),
+        body: JSON.stringify({
+          messages: apiMessages,
+          inspectionContext,
+          userAnthropicKey: userKeys.anthropicKey || undefined,
+        }),
       });
 
       if (!response.ok) throw new Error("Chat request failed");
@@ -145,6 +198,12 @@ export default function SnitchMitchPage() {
             } catch {}
           }
         }
+      }
+
+      // Track usage
+      if (userId && userEmail && !hasUserApiKeys()) {
+        trackUsage(userId, userEmail, "snitch-mitch", images ? "photo" : "chat");
+        setUsageCount(prev => prev + 1);
       }
 
       // Auto-speak if voice is enabled
@@ -287,6 +346,11 @@ export default function SnitchMitchPage() {
     try {
       const formData = new FormData();
       formData.append("audio", blob, "recording.webm");
+      // Pass user OpenAI key if available
+      const userKeys = getUserApiKeys();
+      if (userKeys.openaiKey) {
+        formData.append("openaiKey", userKeys.openaiKey);
+      }
 
       const res = await fetch("/api/snitch-mitch/voice/transcribe", {
         method: "POST",
@@ -315,10 +379,11 @@ export default function SnitchMitchPage() {
 
     setIsSpeaking(true);
     try {
+      const userKeys = getUserApiKeys();
       const res = await fetch("/api/snitch-mitch/voice/speak", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, userOpenaiKey: userKeys.openaiKey || undefined }),
       });
 
       const audioBlob = await res.blob();
@@ -460,6 +525,15 @@ export default function SnitchMitchPage() {
               📋 {findings.length} Finding{findings.length !== 1 ? "s" : ""}
             </button>
           )}
+
+          {/* Settings */}
+          <a
+            href="/settings"
+            className="text-sm px-3 py-1.5 rounded-lg bg-white/10 text-white/60 hover:text-white transition-colors"
+            title="Settings & API Keys"
+          >
+            ⚙️ Settings
+          </a>
 
           {/* Sign out */}
           <button
@@ -670,6 +744,27 @@ export default function SnitchMitchPage() {
                     </button>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Usage Limit Banner */}
+          {!isUnlimited && !hasUserApiKeys() && usageCount >= FREE_LIMIT && (
+            <div className="bg-rust/10 border-t border-rust/20 px-4 py-3">
+              <div className="max-w-3xl mx-auto flex items-center justify-between">
+                <div className="text-sm text-rust">
+                  <strong>Free limit reached</strong> — {usageCount}/{FREE_LIMIT} messages used this month.
+                </div>
+                <a href="/settings" className="text-sm bg-rust text-white px-4 py-1.5 rounded-lg font-medium hover:bg-rust-dark transition-colors">
+                  Add API Key →
+                </a>
+              </div>
+            </div>
+          )}
+          {!isUnlimited && !hasUserApiKeys() && usageCount >= FREE_LIMIT * 0.8 && usageCount < FREE_LIMIT && (
+            <div className="bg-gold/10 border-t border-gold/20 px-4 py-2">
+              <div className="max-w-3xl mx-auto text-xs text-gold-dark text-center">
+                You&apos;ve used {usageCount} of {FREE_LIMIT} free messages this month. <a href="/settings" className="underline font-medium">Add your own API key</a> for unlimited access.
               </div>
             </div>
           )}

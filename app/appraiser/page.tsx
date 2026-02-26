@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import AuthGuard from "@/components/AuthGuard";
 import { supabase } from "@/lib/supabase";
+import { getUserApiKeys, hasUserApiKeys, trackUsage, getUsageCount, FREE_LIMIT } from "@/lib/usage";
 import { APPRAISER_GREETING } from "@/lib/appraiser/system-prompt";
 import {
   type SubjectProperty,
@@ -69,6 +70,37 @@ export default function AppraiserPage() {
   // Photo upload for chat
   const [pendingImages, setPendingImages] = useState<{ data: string; mediaType: string; preview: string }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Usage tracking
+  const [usageCount, setUsageCount] = useState(0);
+  const [isOverLimit, setIsOverLimit] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [isUnlimited, setIsUnlimited] = useState(false);
+
+  // Load user and usage on mount
+  useEffect(() => {
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUserId(session.user.id);
+        setUserEmail(session.user.email || null);
+        const count = await getUsageCount(session.user.id);
+        setUsageCount(count);
+        const { data } = await supabase
+          .from("user_settings")
+          .select("unlimited")
+          .eq("user_id", session.user.id)
+          .single();
+        if (data?.unlimited) {
+          setIsUnlimited(true);
+        } else {
+          const ownKeys = hasUserApiKeys();
+          setIsOverLimit(count >= FREE_LIMIT && !ownKeys);
+        }
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -143,12 +175,23 @@ export default function AppraiserPage() {
         images: m.images?.map(img => ({ data: img.data, mediaType: img.mediaType })),
       }));
 
+      // Check usage limits (skip if unlimited)
+      if (!isUnlimited && !hasUserApiKeys() && usageCount >= FREE_LIMIT) {
+        setIsOverLimit(true);
+        setMessages(prev => prev.map(m => m.id === assistantMsg.id ? { ...m, content: "You've reached your free message limit for this month. Head to **Settings** to add your own API key and continue using the tools." } : m));
+        setIsStreaming(false);
+        return;
+      }
+
+      const userKeys = getUserApiKeys();
+
       const resp = await fetch("/api/appraiser/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: chatHistory,
           appraisalContext: buildAppraisalContext(),
+          userAnthropicKey: userKeys.anthropicKey || undefined,
         }),
         signal: controller.signal,
       });
@@ -176,6 +219,11 @@ export default function AppraiserPage() {
           }
         }
       }
+      // Track usage
+      if (userId && userEmail && !hasUserApiKeys()) {
+        trackUsage(userId, userEmail, "appraiser", images ? "photo" : "chat");
+        setUsageCount(prev => prev + 1);
+      }
     } catch (err: any) {
       if (err.name !== "AbortError") {
         setMessages(prev => prev.map(m => m.id === assistantMsg.id ? { ...m, content: "Sorry, something went wrong. Please try again." } : m));
@@ -184,7 +232,7 @@ export default function AppraiserPage() {
       setIsStreaming(false);
       abortRef.current = null;
     }
-  }, [messages, isStreaming, buildAppraisalContext]);
+  }, [messages, isStreaming, buildAppraisalContext, usageCount, userId, userEmail, isUnlimited]);
 
   // ===== Photo handling =====
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -336,6 +384,13 @@ export default function AppraiserPage() {
                 📄 Download Report
               </button>
             )}
+            <a
+              href="/settings"
+              className="text-sm px-3 py-1.5 rounded-lg bg-white/10 text-white/60 hover:text-white transition-colors"
+              title="Settings & API Keys"
+            >
+              ⚙️ Settings
+            </a>
             <button
               onClick={() => supabase.auth.signOut()}
               className="text-sm px-3 py-1.5 rounded-lg bg-white/10 text-white/60 hover:text-white transition-colors"
@@ -824,6 +879,22 @@ export default function AppraiserPage() {
                       <button onClick={() => setPendingImages(prev => prev.filter((_, idx) => idx !== i))} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 text-[10px] flex items-center justify-center">×</button>
                     </div>
                   ))}
+                </div>
+              )}
+
+              {/* Usage Limit Banner */}
+              {!isUnlimited && !hasUserApiKeys() && usageCount >= FREE_LIMIT && (
+                <div className="p-3 bg-rust/10 border-t border-rust/20">
+                  <div className="text-xs text-rust text-center">
+                    <strong>Free limit reached</strong> — <a href="/settings" className="underline">Add API Key</a>
+                  </div>
+                </div>
+              )}
+              {!isUnlimited && !hasUserApiKeys() && usageCount >= FREE_LIMIT * 0.8 && usageCount < FREE_LIMIT && (
+                <div className="p-2 bg-gold/10 border-t border-gold/20">
+                  <div className="text-[10px] text-center text-yellow-700">
+                    {usageCount}/{FREE_LIMIT} free messages used. <a href="/settings" className="underline">Add key</a> for unlimited.
+                  </div>
                 </div>
               )}
 

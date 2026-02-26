@@ -52,12 +52,17 @@ export default function Home() {
           <div className="flex items-center gap-4">
             <span className="text-sm text-gray-400 hidden sm:block">AI-Powered Tools for Real Estate Pros</span>
             {user ? (
-              <button
-                onClick={() => supabase.auth.signOut()}
-                className="text-sm text-gray-400 hover:text-navy transition-colors font-medium"
-              >
-                Sign Out
-              </button>
+              <div className="flex items-center gap-3">
+                <a href="/settings" className="text-sm text-gray-400 hover:text-navy transition-colors font-medium">
+                  ⚙️ Settings
+                </a>
+                <button
+                  onClick={() => supabase.auth.signOut()}
+                  className="text-sm text-gray-400 hover:text-navy transition-colors font-medium"
+                >
+                  Sign Out
+                </button>
+              </div>
             ) : (
               <a href="/login" className="text-sm bg-navy text-white px-4 py-2 rounded-xl font-medium hover:bg-navy-dark transition-colors">
                 Sign In
