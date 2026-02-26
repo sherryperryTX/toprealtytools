@@ -29,11 +29,13 @@ export default function AdminPage() {
       if (!session?.user) return;
 
       // Check if user is admin
-      const { data: adminData } = await supabase
+      const { data: adminData, error: adminError } = await supabase
         .from("admin_users")
         .select("user_id")
         .eq("user_id", session.user.id)
-        .single();
+        .maybeSingle();
+
+      console.log("Admin check:", { adminData, adminError, userId: session.user.id });
 
       if (!adminData) {
         setIsAdmin(false);
