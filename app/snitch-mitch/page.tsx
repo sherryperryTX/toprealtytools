@@ -4,6 +4,8 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { MITCH_GREETING } from "@/lib/snitch-mitch/system-prompt";
 import { INSPECTION_AREAS, DEFAULT_INSPECTION_ORDER, type InspectionArea } from "@/lib/snitch-mitch/inspection-areas";
 import type { Finding, InspectionReport } from "@/lib/snitch-mitch/report-builder";
+import AuthGuard from "@/components/AuthGuard";
+import { supabase } from "@/lib/supabase";
 
 // ===== Types =====
 interface ChatMessage {
@@ -382,7 +384,8 @@ export default function SnitchMitchPage() {
 
   // ===== Render =====
   return (
-    <div className="h-screen flex flex-col bg-cream">
+    <AuthGuard>
+      <div className="h-screen flex flex-col bg-cream">
       {/* Header */}
       <header className="bg-navy text-white px-4 py-3 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
@@ -426,6 +429,15 @@ export default function SnitchMitchPage() {
               📋 {findings.length} Finding{findings.length !== 1 ? "s" : ""}
             </button>
           )}
+
+          {/* Sign out */}
+          <button
+            onClick={() => supabase.auth.signOut()}
+            className="text-sm px-3 py-1.5 rounded-lg bg-white/10 text-white/60 hover:text-white transition-colors"
+            title="Sign out"
+          >
+            Sign Out
+          </button>
         </div>
       </header>
 
@@ -779,7 +791,8 @@ export default function SnitchMitchPage() {
           </aside>
         )}
       </div>
-    </div>
+      </div>
+    </AuthGuard>
   );
 }
 

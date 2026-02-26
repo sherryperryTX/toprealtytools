@@ -1,4 +1,22 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
+import type { User } from "@supabase/supabase-js";
+
 export default function Home() {
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
   const tools = [
     {
       name: "Snitch Mitch",
@@ -31,7 +49,21 @@ export default function Home() {
             <span className="text-2xl font-display font-extrabold text-navy">Top Realty</span>
             <span className="text-2xl font-display font-extrabold text-rust">Tools</span>
           </div>
-          <span className="text-sm text-gray-400 hidden sm:block">AI-Powered Tools for Real Estate Pros</span>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-gray-400 hidden sm:block">AI-Powered Tools for Real Estate Pros</span>
+            {user ? (
+              <button
+                onClick={() => supabase.auth.signOut()}
+                className="text-sm text-gray-400 hover:text-navy transition-colors font-medium"
+              >
+                Sign Out
+              </button>
+            ) : (
+              <a href="/login" className="text-sm bg-navy text-white px-4 py-2 rounded-xl font-medium hover:bg-navy-dark transition-colors">
+                Sign In
+              </a>
+            )}
+          </div>
         </div>
       </header>
 
@@ -54,10 +86,17 @@ export default function Home() {
             Professional AI tools designed specifically for real estate agents.
             Inspections, appraisals, and more — powered by the latest AI.
           </p>
-          <a href="#tools" className="inline-flex items-center gap-2 bg-rust text-white px-8 py-4 rounded-2xl font-semibold text-lg hover:bg-rust-dark transition-all hover:shadow-xl hover:shadow-rust/25 hover:-translate-y-0.5">
-            Explore Tools
-            <span className="text-white/80">↓</span>
-          </a>
+          {user ? (
+            <a href="#tools" className="inline-flex items-center gap-2 bg-rust text-white px-8 py-4 rounded-2xl font-semibold text-lg hover:bg-rust-dark transition-all hover:shadow-xl hover:shadow-rust/25 hover:-translate-y-0.5">
+              Explore Tools
+              <span className="text-white/80">↓</span>
+            </a>
+          ) : (
+            <a href="/login" className="inline-flex items-center gap-2 bg-rust text-white px-8 py-4 rounded-2xl font-semibold text-lg hover:bg-rust-dark transition-all hover:shadow-xl hover:shadow-rust/25 hover:-translate-y-0.5">
+              Sign In to Get Started
+              <span className="text-white/80">→</span>
+            </a>
+          )}
         </div>
       </section>
 
