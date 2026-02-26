@@ -34,9 +34,9 @@ export default function Home() {
       description: "Work alongside an AI appraiser to pull comparables, make adjustments, and produce professional property appraisals with full analysis.",
       href: "/appraiser",
       icon: "📊",
-      status: "coming-soon",
+      status: "live",
       gradient: "from-navy-light via-navy to-navy-dark",
-      badge: "bg-white/20 text-white",
+      badge: "bg-white text-navy",
     },
   ];
 
