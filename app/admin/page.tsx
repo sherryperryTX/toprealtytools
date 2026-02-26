@@ -18,6 +18,8 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<UserRow[]>([]);
   const [saving, setSaving] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     checkAdminAndLoadUsers();
@@ -27,6 +29,7 @@ export default function AdminPage() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
+      setCurrentUserId(session.user.id);
 
       // Check if user is admin
       const { data: adminData, error: adminError } = await supabase
@@ -148,10 +151,28 @@ export default function AdminPage() {
     return (
       <AuthGuard>
         <div className="min-h-screen bg-cream flex items-center justify-center">
-          <div className="bg-white rounded-2xl p-8 shadow-sm max-w-md text-center">
+          <div className="bg-white rounded-2xl p-8 shadow-sm max-w-lg text-center">
             <div className="text-4xl mb-4">🔒</div>
             <h1 className="text-xl font-bold text-navy mb-2">Access Denied</h1>
             <p className="text-gray-400 text-sm mb-4">You don&apos;t have admin access.</p>
+            {currentUserId && (
+              <div className="bg-gray-50 rounded-xl p-4 mb-4 text-left">
+                <p className="text-xs text-gray-500 mb-2">Your User ID:</p>
+                <div className="flex items-center gap-2">
+                  <code className="bg-white border px-2 py-1 rounded text-xs font-mono text-navy break-all flex-1">{currentUserId}</code>
+                  <button
+                    onClick={() => { navigator.clipboard.writeText(currentUserId); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+                    className="text-xs px-2 py-1 bg-navy text-white rounded hover:bg-navy/80 whitespace-nowrap"
+                  >
+                    {copied ? "Copied!" : "Copy"}
+                  </button>
+                </div>
+                <p className="text-[10px] text-gray-400 mt-3">To grant admin access, run this in Supabase SQL Editor:</p>
+                <code className="block bg-white border px-2 py-1.5 rounded text-[10px] font-mono text-gray-600 mt-1 break-all">
+                  INSERT INTO admin_users (user_id) VALUES (&apos;{currentUserId}&apos;);
+                </code>
+              </div>
+            )}
             <a href="/" className="text-rust font-medium hover:underline text-sm">← Back to Home</a>
           </div>
         </div>
