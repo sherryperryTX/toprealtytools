@@ -232,7 +232,7 @@ export default function SnitchMitchPage() {
     } finally {
       setIsStreaming(false);
     }
-  }, [messages, isStreaming, inspectionMode, currentAreaIndex, inspectionOrder, completedAreas, findings, propertyAddress, voiceEnabled]);
+  }, [messages, isStreaming, inspectionMode, currentAreaIndex, inspectionOrder, completedAreas, findings, propertyAddress, voiceEnabled, userId, userEmail, usageCount, isUnlimited]);
 
   // Parse findings from Mitch's response
   function parseFindingsFromResponse(text: string) {

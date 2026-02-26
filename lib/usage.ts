@@ -41,15 +41,18 @@ export async function trackUsage(
   tool: "snitch-mitch" | "appraiser",
   messageType: "chat" | "photo" | "voice" = "chat"
 ) {
-  const { error } = await supabase.from("usage_tracking").insert({
+  console.log("trackUsage called:", { userId, userEmail, tool, messageType });
+  const { data, error } = await supabase.from("usage_tracking").insert({
     user_id: userId,
     user_email: userEmail,
     tool,
     message_type: messageType,
-  });
+  }).select();
 
   if (error) {
     console.error("Track usage error:", error);
+  } else {
+    console.log("Track usage success:", data);
   }
 }
 
