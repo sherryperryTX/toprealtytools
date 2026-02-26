@@ -155,12 +155,15 @@ export default function SnitchMitchPage() {
       // Parse findings from response if it contains structured data
       parseFindingsFromResponse(assistantContent);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Chat error:", error);
+      const errMsg = error?.message?.includes("413")
+        ? "That image was too large. Please try a smaller photo."
+        : "Sorry, I had trouble processing that. Can you try again?";
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: "Sorry, I had trouble processing that. Can you try again?",
+        content: errMsg,
         timestamp: new Date(),
       }]);
     } finally {
@@ -194,22 +197,50 @@ export default function SnitchMitchPage() {
   }
 
   // ===== Photo Functions =====
+  function compressImage(file: File, maxWidth = 1200, quality = 0.7): Promise<{ data: string; mediaType: string; preview: string }> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const reader = new FileReader();
+      reader.onload = () => {
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          let w = img.width;
+          let h = img.height;
+          if (w > maxWidth) {
+            h = Math.round((h * maxWidth) / w);
+            w = maxWidth;
+          }
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext("2d")!;
+          ctx.drawImage(img, 0, 0, w, h);
+          const dataUrl = canvas.toDataURL("image/jpeg", quality);
+          const base64 = dataUrl.split(",")[1];
+          resolve({
+            data: base64,
+            mediaType: "image/jpeg",
+            preview: dataUrl,
+          });
+        };
+        img.onerror = reject;
+        img.src = reader.result as string;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
   function handlePhotoSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
     if (!files) return;
 
-    Array.from(files).forEach(file => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const base64 = (reader.result as string).split(",")[1];
-        const mediaType = file.type || "image/jpeg";
-        setPendingImages(prev => [...prev, {
-          data: base64,
-          mediaType,
-          preview: reader.result as string,
-        }]);
-      };
-      reader.readAsDataURL(file);
+    Array.from(files).forEach(async file => {
+      try {
+        const compressed = await compressImage(file);
+        setPendingImages(prev => [...prev, compressed]);
+      } catch (err) {
+        console.error("Image compression error:", err);
+      }
     });
 
     // Reset input

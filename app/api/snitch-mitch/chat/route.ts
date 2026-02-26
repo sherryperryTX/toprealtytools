@@ -4,9 +4,13 @@ import { NextRequest } from "next/server";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+// Increase body size limit for image uploads
+export const maxDuration = 60;
+
 export async function POST(req: NextRequest) {
   try {
-    const { messages, inspectionContext } = await req.json();
+    const body = await req.json();
+    const { messages, inspectionContext } = body;
 
     // Build system prompt with inspection context
     let systemPrompt = SNITCH_MITCH_SYSTEM_PROMPT;
@@ -14,8 +18,9 @@ export async function POST(req: NextRequest) {
       systemPrompt += `\n\n## Current Inspection Context\n${inspectionContext}`;
     }
 
-    // Convert messages to Anthropic format
-    const anthropicMessages = messages.map((msg: any) => {
+    // Convert messages to Anthropic format — only send the last 10 messages to stay within limits
+    const recentMessages = messages.slice(-10);
+    const anthropicMessages = recentMessages.map((msg: any) => {
       if (msg.role === "user" && msg.images && msg.images.length > 0) {
         // Message with images
         const content: any[] = [];
@@ -57,8 +62,11 @@ export async function POST(req: NextRequest) {
           }
           controller.enqueue(encoder.encode(`data: [DONE]\n\n`));
           controller.close();
-        } catch (err) {
-          controller.error(err);
+        } catch (err: any) {
+          console.error("Stream error:", err?.message || err);
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: "\n\n[Error: " + (err?.message || "Stream failed") + "]" })}\n\n`));
+          controller.enqueue(encoder.encode(`data: [DONE]\n\n`));
+          controller.close();
         }
       },
     });
@@ -71,7 +79,10 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error("Chat API error:", error);
-    return Response.json({ error: error.message || "Chat failed" }, { status: 500 });
+    console.error("Chat API error:", error?.message || error);
+    return Response.json(
+      { error: error?.message || "Chat failed" },
+      { status: error?.message?.includes("too large") ? 413 : 500 }
+    );
   }
 }
