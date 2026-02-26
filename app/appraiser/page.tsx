@@ -81,23 +81,27 @@ export default function AppraiserPage() {
   // Load user and usage on mount
   useEffect(() => {
     (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setUserId(session.user.id);
-        setUserEmail(session.user.email || null);
-        const count = await getUsageCount(session.user.id);
-        setUsageCount(count);
-        const { data } = await supabase
-          .from("user_settings")
-          .select("unlimited")
-          .eq("user_id", session.user.id)
-          .single();
-        if (data?.unlimited) {
-          setIsUnlimited(true);
-        } else {
-          const ownKeys = hasUserApiKeys();
-          setIsOverLimit(count >= FREE_LIMIT && !ownKeys);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          setUserId(session.user.id);
+          setUserEmail(session.user.email || null);
+          const count = await getUsageCount(session.user.id);
+          setUsageCount(count);
+          const { data } = await supabase
+            .from("user_settings")
+            .select("unlimited")
+            .eq("user_id", session.user.id)
+            .maybeSingle();
+          if (data?.unlimited) {
+            setIsUnlimited(true);
+          } else {
+            const ownKeys = hasUserApiKeys();
+            setIsOverLimit(count >= FREE_LIMIT && !ownKeys);
+          }
         }
+      } catch (err) {
+        console.error("Usage init error:", err);
       }
     })();
   }, []);
