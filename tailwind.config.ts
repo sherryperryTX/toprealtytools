@@ -9,16 +9,29 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        navy: { DEFAULT: "#1B2A4A", light: "#2A3D66", dark: "#111D35" },
-        rust: { DEFAULT: "#C75B39", light: "#D97B5E", dark: "#A14828" },
-        slate: { DEFAULT: "#4A5568" },
-        cream: { DEFAULT: "#FAF8F5" },
-        gold: { DEFAULT: "#D4A853", light: "#E4C47A" },
-        sage: { DEFAULT: "#7BA68D", light: "#9EC5AD" },
+        // Modern, clean but fun palette
+        navy: { DEFAULT: "#0F172A", light: "#1E293B", dark: "#020617" },
+        rust: { DEFAULT: "#F97316", light: "#FB923C", dark: "#EA580C" },
+        slate: { DEFAULT: "#475569" },
+        cream: { DEFAULT: "#F8FAFC" },
+        gold: { DEFAULT: "#EAB308", light: "#FACC15" },
+        sage: { DEFAULT: "#10B981", light: "#34D399" },
+        pop: { DEFAULT: "#6366F1", light: "#818CF8" },
+        cyan: { DEFAULT: "#06B6D4", light: "#22D3EE" },
       },
       fontFamily: {
-        display: ["Georgia", "serif"],
-        body: ["system-ui", "-apple-system", "sans-serif"],
+        display: [
+          "Inter",
+          "system-ui",
+          "-apple-system",
+          "sans-serif",
+        ],
+        body: [
+          "Inter",
+          "system-ui",
+          "-apple-system",
+          "sans-serif",
+        ],
       },
     },
   },

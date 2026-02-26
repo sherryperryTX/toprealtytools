@@ -26,14 +26,15 @@ export async function generateReport(report: InspectionReport): Promise<void> {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
 
-  // Header
-  doc.setFillColor(27, 42, 74); // navy
+  // Header — deep slate navy
+  doc.setFillColor(15, 23, 42); // navy #0F172A
   doc.rect(0, 0, pageWidth, 40, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(24);
   doc.text("Snitch Mitch", 14, 20);
   doc.setFontSize(10);
   doc.text("Home Inspection Report", 14, 28);
+  doc.setTextColor(249, 115, 22); // rust/orange #F97316
   doc.text(`"The Inspector Who Can't Hold a Secret"`, 14, 34);
 
   // Property info
@@ -44,10 +45,10 @@ export async function generateReport(report: InspectionReport): Promise<void> {
 
   // Summary
   doc.setFontSize(14);
-  doc.setTextColor(199, 91, 57); // rust
+  doc.setTextColor(249, 115, 22); // rust #F97316
   doc.text("Inspector Summary", 14, 76);
   doc.setFontSize(10);
-  doc.setTextColor(74, 85, 104);
+  doc.setTextColor(71, 85, 105); // slate-600
   const summaryLines = doc.splitTextToSize(report.inspectorSummary || "No summary provided.", pageWidth - 28);
   doc.text(summaryLines, 14, 84);
 
@@ -62,7 +63,7 @@ export async function generateReport(report: InspectionReport): Promise<void> {
   const repairIssues = report.findings.filter(f => f.classification === "Repair Issue").length;
 
   doc.setFontSize(14);
-  doc.setTextColor(199, 91, 57);
+  doc.setTextColor(249, 115, 22); // rust #F97316
   doc.text("Findings Overview", 14, yPos);
   yPos += 8;
 
@@ -80,7 +81,7 @@ export async function generateReport(report: InspectionReport): Promise<void> {
       ["Total Findings", report.findings.length.toString()],
     ],
     theme: "grid",
-    headStyles: { fillColor: [27, 42, 74] },
+    headStyles: { fillColor: [15, 23, 42] },
     columnStyles: { 0: { cellWidth: 80 } },
     margin: { left: 14 },
   });
@@ -91,13 +92,13 @@ export async function generateReport(report: InspectionReport): Promise<void> {
 
   yPos = (doc as any).lastAutoTable.finalY + 10;
   doc.setFontSize(12);
-  doc.setTextColor(27, 42, 74);
+  doc.setTextColor(15, 23, 42); // navy
   doc.text(`Estimated Total Cost to Cure: $${totalLow.toLocaleString()} — $${totalHigh.toLocaleString()}`, 14, yPos);
 
   // Detailed findings
   doc.addPage();
   doc.setFontSize(18);
-  doc.setTextColor(27, 42, 74);
+  doc.setTextColor(15, 23, 42); // navy
   doc.text("Detailed Findings", 14, 20);
 
   yPos = 30;
@@ -122,11 +123,11 @@ export async function generateReport(report: InspectionReport): Promise<void> {
     doc.roundedRect(14, yPos - 4, 4, 16, 1, 1, "F");
 
     doc.setFontSize(11);
-    doc.setTextColor(27, 42, 74);
+    doc.setTextColor(15, 23, 42); // navy
     doc.text(finding.issue, 22, yPos + 2);
 
     doc.setFontSize(9);
-    doc.setTextColor(107, 114, 128);
+    doc.setTextColor(100, 116, 139); // slate-500
     doc.text(`${finding.area} | ${finding.classification} | ${finding.severity}`, 22, yPos + 8);
     doc.text(`Cost: $${finding.costLow.toLocaleString()} — $${finding.costHigh.toLocaleString()}`, 22, yPos + 14);
 

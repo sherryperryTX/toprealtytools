@@ -1,19 +1,21 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   body {
-    @apply bg-cream text-slate font-body;
+    @apply bg-cream text-slate font-body antialiased;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-rust text-white px-6 py-3 rounded-xl font-semibold hover:bg-rust-dark transition-colors;
+    @apply bg-rust text-white px-6 py-3 rounded-2xl font-semibold hover:bg-rust-dark transition-all hover:shadow-lg hover:shadow-rust/20;
   }
   .btn-secondary {
-    @apply bg-navy text-white px-6 py-3 rounded-xl font-semibold hover:bg-navy-dark transition-colors;
+    @apply bg-navy text-white px-6 py-3 rounded-2xl font-semibold hover:bg-navy-light transition-all hover:shadow-lg;
   }
 }
 
