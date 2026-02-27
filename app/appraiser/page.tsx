@@ -5,7 +5,7 @@ import AuthGuard from "@/components/AuthGuard";
 import { supabase } from "@/lib/supabase";
 import { getUserApiKeys, hasUserApiKeys, trackUsage, getUsageCount, FREE_LIMIT } from "@/lib/usage";
 import { APPRAISER_GREETING } from "@/lib/appraiser/system-prompt";
-import 
+import  {
   type SubjectProperty,
   type ComparableProperty,
   type AdjustmentSet,
@@ -488,19 +488,19 @@ export default function AppraiserPage() {
                               <div className="bg-white rounded-2xl p-6 shadow-sm border-2 border-dashed border-gray-200">
                                               <div className="flex items-center justify-between mb-3">
                                                                 <div className="flex items-center gap-2">
-                                                                                    <span className="text-lg">📄</span>span>
-                                                                                    <h3 className="font-bold text-navy text-sm">Import from CSV</h3>h3>
-                                                                </div>div>
+                                                                                    <span className="text-lg">📄</span>
+                                                                                    <h3 className="font-bold text-navy text-sm">Import from CSV</h3>
+                                                                </div>
                                                                 <button
                                                                                       onClick={() => downloadTemplate("subject")}
                                                                                       className="text-xs text-rust hover:text-rust-dark underline"
                                                                                     >
                                                                                     Download Template
-                                                                </button>button>
-                                              </div>div>
+                                                                </button>
+                                              </div>
                                               <p className="text-xs text-gray-400 mb-3">
                                                                 Upload a CSV file to auto-fill the subject property fields. Use the template for the correct format.
-                                              </p>p>
+                                              </p>
                                               <input
                                                                   ref={subjectCsvRef}
                                                                   type="file"
@@ -513,20 +513,20 @@ export default function AppraiserPage() {
                                                                   className="w-full py-3 border-2 border-dashed border-navy/20 rounded-xl text-navy text-sm font-medium hover:bg-navy/5 hover:border-navy/40 transition-colors"
                                                                 >
                                                                 📤 Choose CSV File for Subject Property
-                                              </button>button>
-                              </div>div>
+                                              </button>
+                              </div>
               
                 {/* CSV Warnings */}
                 {showCsvWarnings && csvWarnings.length > 0 && (
                                 <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
                                                   <div className="flex items-center justify-between mb-2">
-                                                                      <span className="text-sm font-medium text-yellow-800">⚠️ CSV Import Notes</span>span>
-                                                                      <button onClick={() => setShowCsvWarnings(false)} className="text-yellow-600 text-xs hover:text-yellow-800">Dismiss</button>button>
-                                                  </div>div>
+                                                                      <span className="text-sm font-medium text-yellow-800">⚠️ CSV Import Notes</span>
+                                                                      <button onClick={() => setShowCsvWarnings(false)} className="text-yellow-600 text-xs hover:text-yellow-800">Dismiss</button>
+                                                  </div>
                                   {csvWarnings.map((w, i) => (
-                                                      <p key={i} className="text-xs text-yellow-700">{w}</p>p>
+                                                      <p key={i} className="text-xs text-yellow-700">{w}</p>
                                                     ))}
-                                </div>div>
+                                </div>
                             )}</div>
 
                 <div className="bg-white rounded-2xl p-6 shadow-sm space-y-4">
@@ -660,19 +660,19 @@ export default function AppraiserPage() {
                               <div className="bg-white rounded-2xl p-6 shadow-sm border-2 border-dashed border-gray-200">
                                               <div className="flex items-center justify-between mb-3">
                                                                 <div className="flex items-center gap-2">
-                                                                                    <span className="text-lg">📄</span>span>
-                                                                                    <h3 className="font-bold text-navy text-sm">Import Comps from CSV</h3>h3>
-                                                                </div>div>
+                                                                                    <span className="text-lg">📄</span>
+                                                                                    <h3 className="font-bold text-navy text-sm">Import Comps from CSV</h3>
+                                                                </div>
                                                                 <button
                                                                                       onClick={() => downloadTemplate("comps")}
                                                                                       className="text-xs text-rust hover:text-rust-dark underline"
                                                                                     >
                                                                                     Download Template
-                                                                </button>button>
-                                              </div>div>
+                                                                </button>
+                                              </div>
                                               <p className="text-xs text-gray-400 mb-3">
                                                                 Upload a CSV file with comparable sales data. Each row becomes one comp (max 6). This will replace existing comps.
-                                              </p>p>
+                                              </p>
                                               <input
                                                                   ref={compsCsvRef}
                                                                   type="file"
@@ -685,20 +685,20 @@ export default function AppraiserPage() {
                                                                   className="w-full py-3 border-2 border-dashed border-navy/20 rounded-xl text-navy text-sm font-medium hover:bg-navy/5 hover:border-navy/40 transition-colors"
                                                                 >
                                                                 📤 Choose CSV File for Comparables
-                                              </button>button>
-                              </div>div>
+                                              </button>
+                              </div>
               
                 {/* CSV Warnings for Comps */}
                 {showCsvWarnings && csvWarnings.length > 0 && (
                                 <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
                                                   <div className="flex items-center justify-between mb-2">
-                                                                      <span className="text-sm font-medium text-yellow-800">⚠️ CSV Import Notes</span>span>
-                                                                      <button onClick={() => setShowCsvWarnings(false)} className="text-yellow-600 text-xs hover:text-yellow-800">Dismiss</button>button>
-                                                  </div>div>
+                                                                      <span className="text-sm font-medium text-yellow-800">⚠️ CSV Import Notes</span>
+                                                                      <button onClick={() => setShowCsvWarnings(false)} className="text-yellow-600 text-xs hover:text-yellow-800">Dismiss</button>
+                                                  </div>
                                   {csvWarnings.map((w, i) => (
-                                                      <p key={i} className="text-xs text-yellow-700">{w}</p>p>
+                                                      <p key={i} className="text-xs text-yellow-700">{w}</p>
                                                     ))}
-                                </div>div>
+                                </div>
                             )}</div>
 
                 {comps.map((comp, idx) => (
