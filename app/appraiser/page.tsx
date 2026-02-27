@@ -5,7 +5,7 @@ import AuthGuard from "@/components/AuthGuard";
 import { supabase } from "@/lib/supabase";
 import { getUserApiKeys, hasUserApiKeys, trackUsage, getUsageCount, FREE_LIMIT } from "@/lib/usage";
 import { APPRAISER_GREETING } from "@/lib/appraiser/system-prompt";
-import {
+import 
   type SubjectProperty,
   type ComparableProperty,
   type AdjustmentSet,
@@ -16,6 +16,7 @@ import {
   createEmptyComp,
 } from "@/lib/appraiser/types";
 import { calculateAutoAdjustments, buildAdjustmentSet } from "@/lib/appraiser/adjustments";
+import { parseSubjectCSV, parseCompsCSV, getSubjectCSVTemplate, getCompsCSVTemplate } from "@/lib/appraiser/csv-parser";
 
 // ===== Types =====
 interface ChatMessage {
@@ -70,6 +71,12 @@ export default function AppraiserPage() {
   // Photo upload for chat
   const [pendingImages, setPendingImages] = useState<{ data: string; mediaType: string; preview: string }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // CSV upload
+    const [csvWarnings, setCsvWarnings] = useState<string[]>([]);
+    const [showCsvWarnings, setShowCsvWarnings] = useState(false);
+    const subjectCsvRef = useRef<HTMLInputElement>(null);
+    const compsCsvRef = useRef<HTMLInputElement>(null);
 
   // Usage tracking
   const [usageCount, setUsageCount] = useState(0);
@@ -259,6 +266,48 @@ export default function AppraiserPage() {
   // ===== Auto-calculate adjustments =====
   const recalcAdjustments = useCallback(() => {
     const validComps = comps.filter(c => c.address && c.salePrice);
+
+      // ===== CSV Upload Handlers =====
+      const handleSubjectCsvUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+                    const text = reader.result as string;
+                    const { subject: parsed, warnings } = parseSubjectCSV(text);
+                    setSubject(parsed);
+                    setCsvWarnings(warnings);
+                    setShowCsvWarnings(warnings.length > 0);
+            };
+            reader.readAsText(file);
+            e.target.value = "";
+      };
+
+      const handleCompsCsvUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+                    const text = reader.result as string;
+                    const { comps: parsed, warnings } = parseCompsCSV(text);
+                    if (parsed.length > 0) setComps(parsed);
+                    setCsvWarnings(warnings);
+                    setShowCsvWarnings(warnings.length > 0);
+            };
+            reader.readAsText(file);
+            e.target.value = "";
+      };
+
+      const downloadTemplate = (type: "subject" | "comps") => {
+            const csv = type === "subject" ? getSubjectCSVTemplate() : getCompsCSVTemplate();
+            const blob = new Blob([csv], { type: "text/csv" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = type === "subject" ? "subject-property-template.csv" : "comparables-template.csv";
+            a.click();
+            URL.revokeObjectURL(url);
+      };
     if (validComps.length === 0) return;
 
     const avgPriceSqFt = validComps.reduce((sum, c) => {
@@ -435,6 +484,51 @@ export default function AppraiserPage() {
                   <p className="text-gray-400 text-sm">Enter the details of the property being appraised.</p>
                 </div>
 
+                {/* CSV Upload for Subject */}
+                              <div className="bg-white rounded-2xl p-6 shadow-sm border-2 border-dashed border-gray-200">
+                                              <div className="flex items-center justify-between mb-3">
+                                                                <div className="flex items-center gap-2">
+                                                                                    <span className="text-lg">📄</span>span>
+                                                                                    <h3 className="font-bold text-navy text-sm">Import from CSV</h3>h3>
+                                                                </div>div>
+                                                                <button
+                                                                                      onClick={() => downloadTemplate("subject")}
+                                                                                      className="text-xs text-rust hover:text-rust-dark underline"
+                                                                                    >
+                                                                                    Download Template
+                                                                </button>button>
+                                              </div>div>
+                                              <p className="text-xs text-gray-400 mb-3">
+                                                                Upload a CSV file to auto-fill the subject property fields. Use the template for the correct format.
+                                              </p>p>
+                                              <input
+                                                                  ref={subjectCsvRef}
+                                                                  type="file"
+                                                                  accept=".csv,text/csv"
+                                                                  onChange={handleSubjectCsvUpload}
+                                                                  className="hidden"
+                                                                />
+                                              <button
+                                                                  onClick={() => subjectCsvRef.current?.click()}
+                                                                  className="w-full py-3 border-2 border-dashed border-navy/20 rounded-xl text-navy text-sm font-medium hover:bg-navy/5 hover:border-navy/40 transition-colors"
+                                                                >
+                                                                📤 Choose CSV File for Subject Property
+                                              </button>button>
+                              </div>div>
+              
+                {/* CSV Warnings */}
+                {showCsvWarnings && csvWarnings.length > 0 && (
+                                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                                                  <div className="flex items-center justify-between mb-2">
+                                                                      <span className="text-sm font-medium text-yellow-800">⚠️ CSV Import Notes</span>span>
+                                                                      <button onClick={() => setShowCsvWarnings(false)} className="text-yellow-600 text-xs hover:text-yellow-800">Dismiss</button>button>
+                                                  </div>div>
+                                  {csvWarnings.map((w, i) => (
+                                                      <p key={i} className="text-xs text-yellow-700">{w}</p>p>
+                                                    ))}
+                                </div>div>
+                            )}</div>
+
                 <div className="bg-white rounded-2xl p-6 shadow-sm space-y-4">
                   <h3 className="font-bold text-navy text-sm">Location</h3>
                   <input className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Street Address" value={subject.address} onChange={e => updateSubject("address", e.target.value)} />
@@ -561,6 +655,51 @@ export default function AppraiserPage() {
                   <h2 className="text-2xl font-display font-bold text-navy mb-1">Comparable Sales</h2>
                   <p className="text-gray-400 text-sm">Add 1-6 comparable properties. The more detail you provide, the better the analysis.</p>
                 </div>
+
+                {/* CSV Upload for Comps */}
+                              <div className="bg-white rounded-2xl p-6 shadow-sm border-2 border-dashed border-gray-200">
+                                              <div className="flex items-center justify-between mb-3">
+                                                                <div className="flex items-center gap-2">
+                                                                                    <span className="text-lg">📄</span>span>
+                                                                                    <h3 className="font-bold text-navy text-sm">Import Comps from CSV</h3>h3>
+                                                                </div>div>
+                                                                <button
+                                                                                      onClick={() => downloadTemplate("comps")}
+                                                                                      className="text-xs text-rust hover:text-rust-dark underline"
+                                                                                    >
+                                                                                    Download Template
+                                                                </button>button>
+                                              </div>div>
+                                              <p className="text-xs text-gray-400 mb-3">
+                                                                Upload a CSV file with comparable sales data. Each row becomes one comp (max 6). This will replace existing comps.
+                                              </p>p>
+                                              <input
+                                                                  ref={compsCsvRef}
+                                                                  type="file"
+                                                                  accept=".csv,text/csv"
+                                                                  onChange={handleCompsCsvUpload}
+                                                                  className="hidden"
+                                                                />
+                                              <button
+                                                                  onClick={() => compsCsvRef.current?.click()}
+                                                                  className="w-full py-3 border-2 border-dashed border-navy/20 rounded-xl text-navy text-sm font-medium hover:bg-navy/5 hover:border-navy/40 transition-colors"
+                                                                >
+                                                                📤 Choose CSV File for Comparables
+                                              </button>button>
+                              </div>div>
+              
+                {/* CSV Warnings for Comps */}
+                {showCsvWarnings && csvWarnings.length > 0 && (
+                                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                                                  <div className="flex items-center justify-between mb-2">
+                                                                      <span className="text-sm font-medium text-yellow-800">⚠️ CSV Import Notes</span>span>
+                                                                      <button onClick={() => setShowCsvWarnings(false)} className="text-yellow-600 text-xs hover:text-yellow-800">Dismiss</button>button>
+                                                  </div>div>
+                                  {csvWarnings.map((w, i) => (
+                                                      <p key={i} className="text-xs text-yellow-700">{w}</p>p>
+                                                    ))}
+                                </div>div>
+                            )}</div>
 
                 {comps.map((comp, idx) => (
                   <div key={comp.compId} className="bg-white rounded-2xl p-6 shadow-sm space-y-4">
