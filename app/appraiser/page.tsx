@@ -263,51 +263,52 @@ export default function AppraiserPage() {
     e.target.value = "";
   };
 
+  // ===== CSV Upload Handlers =====
+  const handleSubjectCsvUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+                const text = reader.result as string;
+                const { subject: parsed, warnings } = parseSubjectCSV(text);
+                setSubject(parsed);
+                setCsvWarnings(warnings);
+                setShowCsvWarnings(warnings.length > 0);
+        };
+        reader.readAsText(file);
+        e.target.value = "";
+  };
+
+  const handleCompsCsvUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+                const text = reader.result as string;
+                const { comps: parsed, warnings } = parseCompsCSV(text);
+                if (parsed.length > 0) setComps(parsed);
+                setCsvWarnings(warnings);
+                setShowCsvWarnings(warnings.length > 0);
+        };
+        reader.readAsText(file);
+        e.target.value = "";
+  };
+
+  const downloadTemplate = (type: "subject" | "comps") => {
+        const csv = type === "subject" ? getSubjectCSVTemplate() : getCompsCSVTemplate();
+        const blob = new Blob([csv], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = type === "subject" ? "subject-property-template.csv" : "comparables-template.csv";
+        a.click();
+        URL.revokeObjectURL(url);
+  };
+
   // ===== Auto-calculate adjustments =====
   const recalcAdjustments = useCallback(() => {
     const validComps = comps.filter(c => c.address && c.salePrice);
 
-      // ===== CSV Upload Handlers =====
-      const handleSubjectCsvUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-            const file = e.target.files?.[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = () => {
-                    const text = reader.result as string;
-                    const { subject: parsed, warnings } = parseSubjectCSV(text);
-                    setSubject(parsed);
-                    setCsvWarnings(warnings);
-                    setShowCsvWarnings(warnings.length > 0);
-            };
-            reader.readAsText(file);
-            e.target.value = "";
-      };
-
-      const handleCompsCsvUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-            const file = e.target.files?.[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = () => {
-                    const text = reader.result as string;
-                    const { comps: parsed, warnings } = parseCompsCSV(text);
-                    if (parsed.length > 0) setComps(parsed);
-                    setCsvWarnings(warnings);
-                    setShowCsvWarnings(warnings.length > 0);
-            };
-            reader.readAsText(file);
-            e.target.value = "";
-      };
-
-      const downloadTemplate = (type: "subject" | "comps") => {
-            const csv = type === "subject" ? getSubjectCSVTemplate() : getCompsCSVTemplate();
-            const blob = new Blob([csv], { type: "text/csv" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = type === "subject" ? "subject-property-template.csv" : "comparables-template.csv";
-            a.click();
-            URL.revokeObjectURL(url);
-      };
     if (validComps.length === 0) return;
 
     const avgPriceSqFt = validComps.reduce((sum, c) => {
